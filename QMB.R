@@ -15,8 +15,8 @@ library(dendextend)
 library(stringr)
 library(gridExtra)
 library(cowplot)
-library(sf)
-library(concaveman)
+#library(sf)
+#library(concaveman)
 library(data.table)
 library(pals)
 library(presto)
@@ -42,12 +42,12 @@ celltype_cols <- c(`Adipocytes/Sebaceous Glands` = "#F8766D", `ciliated epitheli
 
 time_levels <- c("0dpi", "2dpi", "3dpi", "4dpi")
 
-
+setwd("~/temp/QMB10/")
 
 #download the fully annotated object from GEO https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM9378020
-GSM9378020_HSV1all_anncore_annot_3 <- readRDS("GSM9378020_HSV1all_anncore_annot_3.rds")
-
-
+#HSV1all_ann <- readRDS("HSV1all_anncore_annot_3.rds")
+#Load pseudobulk data
+pseudobulk_all <- readRDS("pseudobulk_all.rds")
 
 #######################
 #Clustering infected papillary fibroblasts
@@ -56,13 +56,17 @@ GSM9378020_HSV1all_anncore_annot_3 <- readRDS("GSM9378020_HSV1all_anncore_annot_
 #Variable genes: These are genes that in papillary fibroblasts at some points vary during infection, either up or down, and includes viral genes
 #we then cluster using these genes only 
 variable_genes <- pseudobulk_all %>% filter(grepl("Papillary", celltype)) %>% filter(padj < 0.01) %>% pull (var="gene_name") %>% unique()
-
 variable_genes_seu <- gsub("_", "-", variable_genes)
-seu <- VoltRon::as.Seurat(HSV1all_ann, cell.assay = "Xenium", type = "image")
-seu$HSV1load = HSV1all_ann@metadata@cell$HSV1Count/HSV1all_ann@metadata@cell$Count*100
-t <- 2
-select_cells <- seu@meta.data %>% filter(grepl("Papillary", celltype)) %>% filter(HSV1Count >= t) %>% rownames()
-seu <- subset(seu, cells=select_cells)
+
+#seu <- VoltRon::as.Seurat(HSV1all_ann, cell.assay = "Xenium", type = "image")
+#seu$HSV1load = HSV1all_ann@metadata@cell$HSV1Count/HSV1all_ann@metadata@cell$Count*100
+#t <- 2
+#select_cells <- seu@meta.data %>% filter(grepl("Papillary", celltype)) %>% filter(HSV1Count >= t) %>% rownames()
+#seu <- subset(seu, cells=select_cells)
+#saveRDS(seu, "seu.rds")
+
+seu <- readRDS("seu.rds")
+
 all.genes <- rownames(seu)
 seu <- NormalizeData(seu)
 seu <- ScaleData(seu, features = all.genes)
@@ -98,19 +102,6 @@ ggsave("inf_clusters_pap.pdf", useDingbats=FALSE, width=18, height = 6)
 #Feature plots with some genes for supplementary figure S20
 FeaturePlot(seu, c("HSV1-US1", "IER3", "HSV1-LAT", "DUX4", "BBC3as", "CD79A"), pt.size = 0.05, ncol = 3)
 ggsave("inf_clusters_featureplots_pap.pdf", useDingbats=FALSE, width=15, height = 10)
-
-#Transfer cluster information to VoltRon object
-df <- HSV1all_ann@metadata@cell %>% rownames_to_column()
-df$pap_clusters <- NULL
-df2 <- seu@meta.data %>% dplyr::select("infcluster") %>% rownames_to_column()
-colnames(df2) <- c("rowname", "pap_clusters")
-df <- left_join(df, df2, by=c("rowname")) %>% replace(., is.na(.), "not pap") %>% mutate(pap_clusters=ifelse(grepl("Papillary", celltype) & pap_clusters=="not pap", "pap no virus", pap_clusters))
-HSV1all_ann@metadata@cell$inf_clusters_pap <- df$pap_clusters
-
-cluster_colors_2 <- c("not pap"="#EEEEEE", "pap no virus" = "#FFBBBB", cluster_colors)
-#Color by the clusters devised above, or not papillary (grey), or papillary fibroblasts without virus
-vrSpatialPlot(HSV1all_ann, group.by = 'inf_clusters_pap', colors = cluster_colors_2, pt.size = 0.5, alpha = 1, plot.segments = TRUE, background.color = "black")+coord_fixed()
-ggsave("HSV1all_inf_clusters_pap.pdf", width=11, height=8)
 
 #Transfer information to the 3dpi subset (for Fig. 6B)
 the_name="3dpi"
