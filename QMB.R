@@ -200,7 +200,7 @@ rownames(df_metadata_coords) <- df_metadata_coords$cell
 #   df_distances[[the_annotation]] <- df_metadata_coords_temp
 # }
 
-df_distances_temp <- do.call(rbind, df_distances)
+#df_distances_temp <- do.call(rbind, df_distances)
 df_distances_temp <- readRDS("df_distances_temp.rds")
 
 #df_metadata <- HSV1all_ann@metadata@cell
@@ -233,6 +233,8 @@ vrSpatialPlot(figure_subset, group.by = 'infectionfront', colors = cluster_color
 #Make count table with cell types and distgroups
 expr <- list()
 expr_stats <- list()
+rm(seu)
+rm(figure_subset)
 count_data <- readRDS("count_data.rds")
 for (the_timepoint in c("0dpi", "3dpi", "4dpi")) {
   for (the_params in c("pap no virus", "uninfected_next_to_infectionfront", "infectionfront", "infected_next_to_infectionfront")) {
