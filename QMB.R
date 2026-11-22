@@ -122,7 +122,6 @@ identical(rownames(df), rownames(figure_subset@metadata@cell))
 figure_subset@metadata@cell <- df
 cluster_colors_2 <- c("not pap" = "#EEEEEE", "pap no virus"="#FFBBBB", cluster_colors)
 vrSpatialPlot(figure_subset, group.by = 'inf_clusters_pap', colors = cluster_colors_2, pt.size = 0.5, alpha = 1, plot.segments = TRUE, background.color = "black")+coord_fixed()
-ggsave("figure_subset_3dpi_inf_clusters_pap.pdf", width=6, height=2)
 
 #Next step: determine the "infection front". These are cells that are in infcluster1 (i.e. the cluster with the lowest amount viral reads, I just got infected)
 #But we term these cells only "infection front" if there are in a group of at least 5 members, and every member of the group is less than 150 µm away from
@@ -141,75 +140,74 @@ df_metadata_coords <- left_join(df_metadata_coords, coords, by="cell")
 rownames(df_metadata_coords) <- df_metadata_coords$cell
 
 #These values are of course adjustable, they sounded reasonable to us given how far cells are away from each other and how the infection front looks like
-the_proxdist=150
-the_groupsize=5
-df_distances <- list()
-#Cycle through all individual organoids
-for (the_annotation in unique(df_metadata_coords$annotation)) {
-  print(the_annotation)
-  
-  #Select only papillary fibroblasts in the annotation we are handling
-  df_metadata_coords_temp <- df_metadata_coords %>% filter(annotation == the_annotation) %>% filter(grepl("Papillary", celltype))
-  all_cells <- df_metadata_coords_temp %>% dplyr::select(c("x", "y"))
-  #Make distance matrix of papillary fibroblasts
-  d <- dist(df_metadata_coords_temp %>% dplyr::select(c("x", "y")))
-  distance_table <- as.data.frame(as.matrix(d))
-  
-  #define the cells that make up the base cells, from which then distance regions are expanded (i.e. infcluster 1)
-  points_coords <- df_metadata_coords_temp %>%
-    filter(inf_clusters_pap=="infcluster1") %>%
-    dplyr::select(c("x", "y", "cell"))
-  dist_mat <- as.numeric(as.matrix(dist(points_coords %>% dplyr::select(c("x", "y")))))
-  
-  #Calculate adjacency matrix, everything that is closer than the_proxdist µm to each other is put into a group
-  adj2 <- matrix(dist_mat < the_proxdist, nrow = nrow(points_coords))
-  g <- graph_from_adjacency_matrix(adj2)
-  points_coords$infareagroup <- igraph::components(g)$membership
-  df_metadata_coords_temp <- left_join(df_metadata_coords_temp, points_coords %>% dplyr::select(c("cell", "infareagroup")), by="cell") %>% replace(., is.na(.), 0)
-  rownames(df_metadata_coords_temp) <- df_metadata_coords_temp$cell
-  
-  #Groups with less than the_groupsize cells are filtered out
-  small_clusts <- df_metadata_coords_temp %>% group_by(infareagroup) %>% tally() %>% filter(n<the_groupsize) %>% pull(infareagroup)
-  df_metadata_coords_temp <- df_metadata_coords_temp %>% mutate(infareagroup=if_else(infareagroup %in% small_clusts, 10000, infareagroup))
-  df_metadata_coords_temp$infareagroup <- paste0(df_metadata_coords_temp$infareagroup, "_", the_annotation)
-  
-  #metadata_basecells contains the infcluster1 papillary fibroblasts in the groups defined before, i.e. the infection fron
-  metadata_basecells <- df_metadata_coords_temp %>% filter(!grepl("^0_|^10000_", infareagroup, perl=TRUE))
-  
-  #For every cell, calculate distance to the closest basecell
-  expr2 <- list()
-  i <- 1
-  print(length(rownames(all_cells)))
-  for (the_cell in rownames(all_cells)) {
-    if (i %% 500 == 0) {
-      print(i)
-    }
-    df <- distance_table %>% dplyr::select(all_of(the_cell)) %>% rownames_to_column(var="cell")
-    colnames(df) <- c("cell", "distance")
-    expr2[[the_cell]] <- merge(df, metadata_basecells, by="cell") %>% slice_min(order_by=distance, n=1)
-    i = i+1
-  }
-  #Transfer distance information to df_metadata_coords_temp, which is the dataframe with the metadata of the annotation we are working on 
-  distances <- do.call(rbind,expr2) %>% replace(., is.na(.), 0)
-  distances$cell <- rownames(distances)
-  df_metadata_coords_temp <- left_join(df_metadata_coords_temp, distances %>% dplyr::select(c("cell", "distance")), by="cell")
-  df_metadata_coords_temp <- df_metadata_coords_temp %>% mutate(infectionfront = case_when(!grepl("^0_|^10000_", infareagroup, perl=TRUE) & inf_clusters_pap == "infcluster1" ~ "infectionfront",
-                                                                                           distance <50 & inf_clusters_pap == "pap no virus" ~ "uninfected_next_to_infectionfront",
-                                                                                           distance <50 & inf_clusters_pap == "infcluster2" ~ "infected_next_to_infectionfront",
-                                                                                           inf_clusters_pap %in% c("infcluster3", "infcluster4", "infcluster5", "infcluster6", "infcluster7") ~ "later_infected",
-                                                                                           .default = inf_clusters_pap))
-  df_distances[[the_annotation]] <- df_metadata_coords_temp
-}
+# the_proxdist=150
+# the_groupsize=5
+# df_distances <- list()
+# #Cycle through all individual organoids
+# for (the_annotation in unique(df_metadata_coords$annotation)) {
+#   print(the_annotation)
+#   
+#   #Select only papillary fibroblasts in the annotation we are handling
+#   df_metadata_coords_temp <- df_metadata_coords %>% filter(annotation == the_annotation) %>% filter(grepl("Papillary", celltype))
+#   all_cells <- df_metadata_coords_temp %>% dplyr::select(c("x", "y"))
+#   #Make distance matrix of papillary fibroblasts
+#   d <- dist(df_metadata_coords_temp %>% dplyr::select(c("x", "y")))
+#   distance_table <- as.data.frame(as.matrix(d))
+#   
+#   #define the cells that make up the base cells, from which then distance regions are expanded (i.e. infcluster 1)
+#   points_coords <- df_metadata_coords_temp %>%
+#     filter(inf_clusters_pap=="infcluster1") %>%
+#     dplyr::select(c("x", "y", "cell"))
+#   dist_mat <- as.numeric(as.matrix(dist(points_coords %>% dplyr::select(c("x", "y")))))
+#   
+#   #Calculate adjacency matrix, everything that is closer than the_proxdist µm to each other is put into a group
+#   adj2 <- matrix(dist_mat < the_proxdist, nrow = nrow(points_coords))
+#   g <- graph_from_adjacency_matrix(adj2)
+#   points_coords$infareagroup <- igraph::components(g)$membership
+#   df_metadata_coords_temp <- left_join(df_metadata_coords_temp, points_coords %>% dplyr::select(c("cell", "infareagroup")), by="cell") %>% replace(., is.na(.), 0)
+#   rownames(df_metadata_coords_temp) <- df_metadata_coords_temp$cell
+#   
+#   #Groups with less than the_groupsize cells are filtered out
+#   small_clusts <- df_metadata_coords_temp %>% group_by(infareagroup) %>% tally() %>% filter(n<the_groupsize) %>% pull(infareagroup)
+#   df_metadata_coords_temp <- df_metadata_coords_temp %>% mutate(infareagroup=if_else(infareagroup %in% small_clusts, 10000, infareagroup))
+#   df_metadata_coords_temp$infareagroup <- paste0(df_metadata_coords_temp$infareagroup, "_", the_annotation)
+#   
+#   #metadata_basecells contains the infcluster1 papillary fibroblasts in the groups defined before, i.e. the infection fron
+#   metadata_basecells <- df_metadata_coords_temp %>% filter(!grepl("^0_|^10000_", infareagroup, perl=TRUE))
+#   
+#   #For every cell, calculate distance to the closest basecell
+#   expr2 <- list()
+#   i <- 1
+#   print(length(rownames(all_cells)))
+#   for (the_cell in rownames(all_cells)) {
+#     if (i %% 500 == 0) {
+#       print(i)
+#     }
+#     df <- distance_table %>% dplyr::select(all_of(the_cell)) %>% rownames_to_column(var="cell")
+#     colnames(df) <- c("cell", "distance")
+#     expr2[[the_cell]] <- merge(df, metadata_basecells, by="cell") %>% slice_min(order_by=distance, n=1)
+#     i = i+1
+#   }
+#   #Transfer distance information to df_metadata_coords_temp, which is the dataframe with the metadata of the annotation we are working on 
+#   distances <- do.call(rbind,expr2) %>% replace(., is.na(.), 0)
+#   distances$cell <- rownames(distances)
+#   df_metadata_coords_temp <- left_join(df_metadata_coords_temp, distances %>% dplyr::select(c("cell", "distance")), by="cell")
+#   df_metadata_coords_temp <- df_metadata_coords_temp %>% mutate(infectionfront = case_when(!grepl("^0_|^10000_", infareagroup, perl=TRUE) & inf_clusters_pap == "infcluster1" ~ "infectionfront",
+#                                                                                            distance <50 & inf_clusters_pap == "pap no virus" ~ "uninfected_next_to_infectionfront",
+#                                                                                            distance <50 & inf_clusters_pap == "infcluster2" ~ "infected_next_to_infectionfront",
+#                                                                                            inf_clusters_pap %in% c("infcluster3", "infcluster4", "infcluster5", "infcluster6", "infcluster7") ~ "later_infected",
+#                                                                                            .default = inf_clusters_pap))
+#   df_distances[[the_annotation]] <- df_metadata_coords_temp
+# }
 
 df_distances_temp <- do.call(rbind, df_distances)
+df_distances_temp <- readRDS("df_distances_temp.rds")
 
 #df_metadata <- HSV1all_ann@metadata@cell
 df_metadata <- readRDS("df_metadata.rds")
 df_metadata$cell <- rownames(df_metadata)
 df_metadata <- left_join(df_metadata, df_distances_temp %>% dplyr::select(c("cell", "inf_clusters_pap", "infectionfront")), by="cell") %>% replace(., is.na(.), "not pap")
 rownames(df_metadata) <- df_metadata$cell
-saveRDS(df_metadata$infectionfront, "df_metadata_infectionfront.rds")
-HSV1all_ann@metadata@cell$infectionfront <- df_metadata$infectionfront
 
 cluster_colors_3 <- c("not pap"="#EEEEEE", "pap no virus" = "#FFBBBB", uninfected_next_to_infectionfront="#00FF00", infectionfront="turquoise1", infected_next_to_infectionfront = "blue", infcluster1 = "#352A87", infcluster2 = "#056EDE", infcluster3 = "#089BCE", 
                       infcluster4 = "#33B7A0", infcluster5 = "#A3BD6A", infcluster6 = "#F9BD3F", 
@@ -221,13 +219,10 @@ the_name="3dpi"
 figure_subset <- readRDS(paste0("figure_subset_", the_name, ".rds"))
 df <- figure_subset@metadata@cell
 df$cell <- rownames(df)
-df2 <- HSV1all_ann@metadata@cell
-df2$cell <- rownames(df2)
-df <- left_join(df, df2 %>% select("cell", "infectionfront"), by="cell")
+df <- left_join(df, df_metadata %>% select("cell", "infectionfront"), by="cell")
 rownames(df) <- df$cell
 figure_subset@metadata@cell <- df
 vrSpatialPlot(figure_subset, group.by = 'infectionfront', colors = cluster_colors_3[unique(df$infectionfront)], pt.size = 0.5, alpha = 1, plot.segments = TRUE, background.color = "black")+coord_fixed()
-ggsave("figure_subset_3dpi_infection_front_pap.pdf", width=6, height=2)
 
 
 
@@ -235,18 +230,15 @@ ggsave("figure_subset_3dpi_infection_front_pap.pdf", width=6, height=2)
 ######################
 #Differential expression at the infection front <-  Fig. S22C
 
-#Assign infection front category 
-table(HSV1all_ann@metadata@cell$infectionfront)
-
 #Make count table with cell types and distgroups
 expr <- list()
 expr_stats <- list()
-count_data <- vrData(HSV1all_ann)
+count_data <- readRDS("count_data.rds")
 for (the_timepoint in c("0dpi", "3dpi", "4dpi")) {
   for (the_params in c("pap no virus", "uninfected_next_to_infectionfront", "infectionfront", "infected_next_to_infectionfront")) {
-    for (the_annotation in unique(subset(HSV1all_ann@metadata@cell, timepoint==the_timepoint)$annotation)) {
+    for (the_annotation in unique(subset(df_metadata, timepoint==the_timepoint)$annotation)) {
       namestring <- paste0(the_timepoint,'|', the_annotation,'|',the_params)
-      cells <- HSV1all_ann@metadata@cell %>% filter(infectionfront == the_params) %>% filter(annotation==the_annotation) %>% rownames()
+      cells <- df_metadata %>% filter(infectionfront == the_params) %>% filter(annotation==the_annotation) %>% rownames()
       expr_stats[[namestring]] <- length(cells)
       if (length(cells) > 10) {
         expr[[namestring]] <- rowSums(count_data[,cells])
@@ -319,15 +311,12 @@ for (the_timepoint in c("3dpi", "4dpi")) {
 }
 
 pseudobulk_infectionfront <- do.call(rbind,res)
-saveRDS(pseudobulk_infectionfront, "pseudobulk_infectionfront.rds")
-pseudobulk_infectionfront <- readRDS("new_pap_clustering/pseudobulk_infectionfront.rds")
 
 contrasts_to_use <- c("infectionfront_3dpi_vs_0dpi", 
                       "uninfected_next_to_infectionfront_3dpi_vs_0dpi",
                       "pap no virus_3dpi_vs_0dpi")
 
 df <- pseudobulk_infectionfront %>% filter(contrast %in% contrasts_to_use)
-write.table(df, "pvalues_FigS20C.txt", sep="\t", row.names = FALSE, quote=FALSE)
 
 genes <- pseudobulk_infectionfront %>%
   dplyr::filter(!grepl("HSV", gene_name)) %>% 
@@ -371,6 +360,5 @@ ggplot(pseudobulk_infectionfront %>%
   guides(color=guide_colorbar(barheight=4)) +
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=.5, size=10), axis.text.y=element_text(size=10)) +
   labs(x='',y='')
-h=length(gene.order)/5+3.5
-w=length(colnames(df))*0.7+2
-ggsave("DE_infection_front.pdf", width=w, height = h, units="in", useDingbats=FALSE)
+
+#save to clipboard
