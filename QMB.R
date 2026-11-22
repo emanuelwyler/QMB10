@@ -73,6 +73,7 @@ seu <- ScaleData(seu, features = all.genes)
 seu <- RunPCA(seu, features = variable_genes_seu)
 ElbowPlot(seu)
 seu <- RunUMAP(seu, dims = 1:10)
+UMAPPlot(seu, label=TRUE)
 seu <- FindNeighbors(seu, dims = 1:10)
 #Select a resolution that somehow does not make not too many and not too few clusters
 seu <- FindClusters(seu, resolution = 0.24)
@@ -235,6 +236,8 @@ expr <- list()
 expr_stats <- list()
 rm(seu)
 rm(figure_subset)
+rm(df2)
+rm(df_metadata_coords)
 count_data <- readRDS("count_data.rds")
 for (the_timepoint in c("0dpi", "3dpi", "4dpi")) {
   for (the_params in c("pap no virus", "uninfected_next_to_infectionfront", "infectionfront", "infected_next_to_infectionfront")) {
