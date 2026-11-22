@@ -35,3 +35,7 @@ install.packages('VoltRon', repos = c('https://bimsbbioinfo.r-universe.dev',
                                       'https://bioc.r-universe.dev',
                                       'https://cloud.r-project.org'))
 
+
+if (!requireNamespace("VoltRon", quietly = TRUE)) {
+  stop("VoltRon could not be installed or loaded!")
+}
