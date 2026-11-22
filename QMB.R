@@ -265,7 +265,7 @@ colData_infectionfront <- data.frame(
   group=names(expr),
   row.names=names(expr)
 )
-
+colData_infectionfront <- readRDS("colData_infectionfront.rds")
 res <- list()
 
 #Calculate differential expression
