@@ -238,21 +238,25 @@ rm(seu)
 rm(figure_subset)
 rm(df2)
 rm(df_metadata_coords)
-count_data <- readRDS("count_data.rds")
-for (the_timepoint in c("0dpi", "3dpi", "4dpi")) {
-  for (the_params in c("pap no virus", "uninfected_next_to_infectionfront", "infectionfront", "infected_next_to_infectionfront")) {
-    for (the_annotation in unique(subset(df_metadata, timepoint==the_timepoint)$annotation)) {
-      namestring <- paste0(the_timepoint,'|', the_annotation,'|',the_params)
-      cells <- df_metadata %>% filter(infectionfront == the_params) %>% filter(annotation==the_annotation) %>% rownames()
-      expr_stats[[namestring]] <- length(cells)
-      if (length(cells) > 10) {
-        expr[[namestring]] <- rowSums(count_data[,cells])
-      }
-    }
-  }
-}
-
-counts_infectionfront <- do.call(cbind,expr)
+rm(p1)
+rm(p2)
+rm(p3)
+# count_data <- readRDS("count_data.rds")
+# for (the_timepoint in c("0dpi", "3dpi", "4dpi")) {
+#   for (the_params in c("pap no virus", "uninfected_next_to_infectionfront", "infectionfront", "infected_next_to_infectionfront")) {
+#     for (the_annotation in unique(subset(df_metadata, timepoint==the_timepoint)$annotation)) {
+#       namestring <- paste0(the_timepoint,'|', the_annotation,'|',the_params)
+#       cells <- df_metadata %>% filter(infectionfront == the_params) %>% filter(annotation==the_annotation) %>% rownames()
+#       expr_stats[[namestring]] <- length(cells)
+#       if (length(cells) > 10) {
+#         expr[[namestring]] <- rowSums(count_data[,cells])
+#       }
+#     }
+#   }
+# }
+# 
+# counts_infectionfront <- do.call(cbind,expr)
+counts_infectionfront <- readRDS("counts_infectionfront.rds")
 
 colData_infectionfront <- data.frame(
   timepoint=factor(gsub('^([^\\|]*)\\|([^\\|]*)\\|([^\\|]*)$','\\1',names(expr), perl=TRUE)),
