@@ -19,7 +19,7 @@ library(cowplot)
 #library(concaveman)
 library(data.table)
 library(pals)
-library(presto)
+#library(presto)
 library(purrr)
 library(ggpubr)
 library(RColorBrewer)
@@ -42,7 +42,7 @@ celltype_cols <- c(`Adipocytes/Sebaceous Glands` = "#F8766D", `ciliated epitheli
 
 time_levels <- c("0dpi", "2dpi", "3dpi", "4dpi")
 
-setwd("~/temp/QMB10/")
+#setwd("~/temp/QMB10/")
 
 #download the fully annotated object from GEO https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM9378020
 #HSV1all_ann <- readRDS("HSV1all_anncore_annot_3.rds")
@@ -97,11 +97,14 @@ p2 <- ggplot()+geom_boxplot(data=seu@meta.data, aes(x=factor(infcluster), y=HSV1
 p3 <- DotPlot(seu, group.by="infcluster", features = c("HSV1-UL54", "HSV1-LAT", "BBC3as", "PDGFRA", "CD79A")) +
   theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1))
 p1+p2+p3
-ggsave("inf_clusters_pap.pdf", useDingbats=FALSE, width=18, height = 6)
+
+#Copy to clipboard, paste e.g. in PowerPoint
 
 #Feature plots with some genes for supplementary figure S20
 FeaturePlot(seu, c("HSV1-US1", "IER3", "HSV1-LAT", "DUX4", "BBC3as", "CD79A"), pt.size = 0.05, ncol = 3)
-ggsave("inf_clusters_featureplots_pap.pdf", useDingbats=FALSE, width=15, height = 10)
+
+#Copy to clipboard, paste e.g. in PowerPoint
+
 
 #Transfer information to the 3dpi subset (for Fig. 6B)
 the_name="3dpi"
@@ -109,12 +112,15 @@ figure_subset <- readRDS(paste0("figure_subset_", the_name, ".rds"))
 
 df <- figure_subset@metadata@cell
 df$cell <- rownames(df)
-df2 <- HSV1all_ann@metadata@cell
-df2$cell <- rownames(df2)
+#df2 <- HSV1all_ann@metadata@cell
+#df2$cell <- rownames(df2)
+df2 <- readRDS("df2.rds")
+
 df <- left_join(df, df2 %>% select("cell", "inf_clusters_pap"), by="cell")
 rownames(df) <- df$cell
 identical(rownames(df), rownames(figure_subset@metadata@cell))
 figure_subset@metadata@cell <- df
+cluster_colors_2 <- c("not pap" = "#EEEEEE", "pap no virus"="#FFBBBB", cluster_colors)
 vrSpatialPlot(figure_subset, group.by = 'inf_clusters_pap', colors = cluster_colors_2, pt.size = 0.5, alpha = 1, plot.segments = TRUE, background.color = "black")+coord_fixed()
 ggsave("figure_subset_3dpi_inf_clusters_pap.pdf", width=6, height=2)
 
@@ -123,9 +129,13 @@ ggsave("figure_subset_3dpi_inf_clusters_pap.pdf", width=6, height=2)
 #at least one other group member. By that, individual cells with some few random counts are not "infection" front, but their number is small.
 
 #Make dataframe df_metadata_coords with cell information and coordinates
-df_metadata_coords <- subset(HSV1all_ann@metadata@cell, annotation != "undefined")
+#df_metadata_coords <- subset(HSV1all_ann@metadata@cell, annotation != "undefined")
+df_metadata_coords <- readRDS("df_metadata_coords.rds")
+
 df_metadata_coords$cell <- rownames(df_metadata_coords)
-coords <- as.data.frame(vrCoordinates(HSV1all_ann[['Assay2']]))
+#coords <- as.data.frame(vrCoordinates(HSV1all_ann[['Assay2']]))
+coords <- readRDS("coords.rds")
+
 coords$cell <- rownames(coords)
 df_metadata_coords <- left_join(df_metadata_coords, coords, by="cell")
 rownames(df_metadata_coords) <- df_metadata_coords$cell
@@ -193,7 +203,8 @@ for (the_annotation in unique(df_metadata_coords$annotation)) {
 
 df_distances_temp <- do.call(rbind, df_distances)
 
-df_metadata <- HSV1all_ann@metadata@cell
+#df_metadata <- HSV1all_ann@metadata@cell
+df_metadata <- readRDS("df_metadata.rds")
 df_metadata$cell <- rownames(df_metadata)
 df_metadata <- left_join(df_metadata, df_distances_temp %>% dplyr::select(c("cell", "inf_clusters_pap", "infectionfront")), by="cell") %>% replace(., is.na(.), "not pap")
 rownames(df_metadata) <- df_metadata$cell
@@ -204,12 +215,6 @@ cluster_colors_3 <- c("not pap"="#EEEEEE", "pap no virus" = "#FFBBBB", uninfecte
                       infcluster4 = "#33B7A0", infcluster5 = "#A3BD6A", infcluster6 = "#F9BD3F", 
                       infcluster7 = "#F9FB0E", later_infected="#FF5555")
 
-for (the_timepoint in time_levels) {
-  vrSpatialPlot(subset(HSV1all_ann, timepoint==the_timepoint), group.by = 'infectionfront', colors = cluster_colors_3[unique(subset(HSV1all_ann, timepoint==the_timepoint)@metadata@cell$infectionfront)], pt.size = 0.5, alpha = 1, plot.segments = TRUE, background.color = "black")
-  ggsave(paste0("HSV1all_infectionfront_", the_timepoint, "_new.pdf"), width=10, height=8)
-}
-vrSpatialPlot(HSV1all_ann, group.by = 'infectionfront', colors = cluster_colors_3[unique(HSV1all_ann@metadata@cell$infectionfront)], pt.size = 0.5, alpha = 1, plot.segments = TRUE, background.color = "black")+coord_fixed()
-ggsave("HSV1all_infectionfront.pdf", width=11, height=8)
 
 #Transfer information to the 3dpi subset (for Figure S20B)
 the_name="3dpi"
