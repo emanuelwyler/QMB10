@@ -1,7 +1,3 @@
-install.packages('VoltRon', repos = c('https://bimsbbioinfo.r-universe.dev',
-                                      'https://bioc.r-universe.dev',
-                                      'https://cloud.r-project.org'))
-
 
 install.packages(c(
 "Seurat",
@@ -11,14 +7,10 @@ install.packages(c(
 "tidyr",
 "igraph",
 "reshape2",
-"DESeq2",
-"apeglm",
 "dendextend",
 "stringr",
 "gridExtra",
 "cowplot",
-"sf",
-"concaveman",
 "data.table",
 "pals",
 "presto",
@@ -27,3 +19,19 @@ install.packages(c(
 "RColorBrewer",
 "lme4"
 ))
+
+install.packages(
+  "BiocManager",
+  repos = "https://cloud.r-project.org"
+)
+
+BiocManager::install(
+  c("DESeq2", "apeglm"),
+  ask = FALSE,
+  update = FALSE
+)
+
+install.packages('VoltRon', repos = c('https://bimsbbioinfo.r-universe.dev',
+                                      'https://bioc.r-universe.dev',
+                                      'https://cloud.r-project.org'))
+
